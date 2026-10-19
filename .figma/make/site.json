@@ -1,0 +1,10 @@
+{
+  "description": "Streamlines employee lunch break tracking via QR code scans for security and HR, enabling fast check-ins, schedule management, and detailed reporting.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

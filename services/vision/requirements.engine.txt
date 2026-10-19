@@ -1,0 +1,5 @@
+# Dependencias del motor real. La imagen base no las instala.
+# El equipo de visión las agrega al implementar ModelExtractor.
+#
+# paddleocr
+# opencv-python-headless

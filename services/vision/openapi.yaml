@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info:
+  title: GaritaControl Vision
+  version: 0.1.0
+  description: |
+    Salida de consumo independiente. Cualquier aplicación con la clave X-Vision-Key
+    puede extraer nombre, apellido, DNI y recorte de foto. No consulta perfiles ni registra marcaciones.
+    GET /v1/contrato describe la llamada y no requiere clave.
+paths:
+  /health:
+    get:
+      summary: Estado del proceso y motor activo
+      responses:
+        "200":
+          description: Proceso disponible
+  /v1/documentos/extraer:
+    post:
+      summary: Extraer datos de un documento
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [tipoDocumento, imagen]
+              properties:
+                tipoDocumento:
+                  type: string
+                  enum: [fotocheck, dni]
+                imagen:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Resultado de extracción, aunque el documento sea ilegible o el motor no esté disponible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Extraccion"
+        "401":
+          description: Clave de servicio ausente o inválida
+        "422":
+          description: tipoDocumento inválido
+components:
+  schemas:
+    Extraccion:
+      type: object
+      required: [tipoDocumento, motor, estado, nombre, apellido, dni, foto, confianza, advertencias]
+      properties:
+        tipoDocumento:
+          type: string
+          enum: [fotocheck, dni]
+        motor:
+          type: string
+        estado:
+          type: string
+          enum: [extraido, ilegible, rechazado, motor_no_disponible]
+        nombre:
+          type: string
+          nullable: true
+        apellido:
+          type: string
+          nullable: true
+        dni:
+          type: string
+          nullable: true
+        foto:
+          type: string
+          nullable: true
+          description: JPEG en base64, sin prefijo data.
+        confianza:
+          type: object
+          required: [nombre, apellido, dni, foto]
+          properties:
+            nombre:
+              type: number
+            apellido:
+              type: number
+            dni:
+              type: number
+            foto:
+              type: number
+        advertencias:
+          type: array
+          items:
+            type: string

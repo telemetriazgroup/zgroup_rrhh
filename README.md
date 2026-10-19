@@ -44,12 +44,7 @@ pnpm build
 pnpm format
 ```
 
-## Acceso al prototipo
+## Acceso de prueba
 
-El login actual elige el rol a partir del nombre de usuario:
-
-- un usuario que contenga `hr` o `rrhh` abre el panel de RR.HH.;
-- cualquier otro usuario abre el scanner de garita.
-
-Este mecanismo existe solo para demostrar los flujos y no debe considerarse autenticación de producción.
+El rol sale de la cuenta, no del texto escrito en el usuario. Usuarios, contraseña y funciones están en [`docs/cuentas_rrhh.md`](docs/cuentas_rrhh.md). Esas cuentas son solo del entorno local.
 # zgroup_rrhh

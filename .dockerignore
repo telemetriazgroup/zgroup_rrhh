@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+services
+apps
+db
+docs
+**/.env
+**/.env.*
+*.log
+.vite
+coverage
+__pycache__
+.venv

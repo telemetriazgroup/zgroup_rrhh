@@ -1,0 +1,98 @@
+name: garitacontrol
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-garita}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-garita_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-garitacontrol}
+    command: ["postgres", "-c", "timezone=America/Lima"]
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-garita} -d ${POSTGRES_DB:-garitacontrol}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  vision:
+    build: ./services/vision
+    environment:
+      VISION_ENGINE: ${VISION_ENGINE:-unconfigured}
+      VISION_SHARED_SECRET: ${VISION_SHARED_SECRET:-dev-vision-key}
+    ports:
+      - "${VISION_PORT:-18181}:8081"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build: ./services/api
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-garita}:${POSTGRES_PASSWORD:-garita_dev_only}@db:5432/${POSTGRES_DB:-garitacontrol}
+      VISION_URL: http://vision:8081
+      VISION_SHARED_SECRET: ${VISION_SHARED_SECRET:-dev-vision-key}
+      IDENTITY_MIN_CONFIDENCE: ${IDENTITY_MIN_CONFIDENCE:-0.85}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:18180}
+      MOBILE_ORIGIN: ${MOBILE_ORIGIN:-http://localhost:18183}
+      SEED_DEV_USERS: ${SEED_DEV_USERS:-true}
+      SEED_DEV_PASSWORD: ${SEED_DEV_PASSWORD:-GaritaDev2026}
+    ports:
+      - "${API_PORT:-18182}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      vision:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:18182}
+    environment:
+      PORT: 8080
+    ports:
+      - "${WEB_PORT:-18180}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  movil:
+    build:
+      context: ./apps/movil
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:18182}
+    ports:
+      - "${MOBILE_PORT:-18183}:4174"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
