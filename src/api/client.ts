@@ -18,7 +18,9 @@ export type ApiSession = {
 const STORAGE_KEY = "garita.sesion";
 
 export function apiBaseUrl(): string {
-  return import.meta.env.VITE_API_URL ?? "http://localhost:18182";
+  const configured = import.meta.env.VITE_API_URL?.replace(/\/$/, "");
+  if (import.meta.env.DEV) return "";
+  return configured || "http://localhost:18182";
 }
 
 export function loadSession(): ApiSession | null {
@@ -48,11 +50,16 @@ export async function login(
   password: string,
   mantenerSesion: boolean,
 ): Promise<ApiSession> {
-  const response = await fetch(`${apiBaseUrl()}/api/v1/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password, mantenerSesion }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl()}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, mantenerSesion }),
+    });
+  } catch {
+    throw new Error("No se pudo conectar con la API.");
+  }
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { message?: string } | null;
     throw new Error(body?.message ?? "No se pudo iniciar sesión.");

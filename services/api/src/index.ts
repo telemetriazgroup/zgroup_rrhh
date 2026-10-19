@@ -14,14 +14,32 @@ await migrate();
 await seedDevUsers();
 
 await app.register(cors, {
-  origin: [
-    config.corsOrigin,
-    config.mobileOrigin,
-    "http://localhost:8443",
-    "http://127.0.0.1:8443",
-    "http://localhost:18180",
-    "http://localhost:18183",
-  ],
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    const allowed = new Set([
+      config.corsOrigin,
+      config.mobileOrigin,
+      "http://localhost:8443",
+      "http://127.0.0.1:8443",
+      "http://localhost:18180",
+      "http://127.0.0.1:18180",
+      "http://localhost:18183",
+      "http://127.0.0.1:18183",
+      "http://localhost:18443",
+      "http://127.0.0.1:18443",
+    ]);
+    let localPreview = false;
+    try {
+      const url = new URL(origin);
+      localPreview = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    } catch {
+      localPreview = false;
+    }
+    callback(null, allowed.has(origin) || localPreview);
+  },
   allowedHeaders: ["Content-Type", "Authorization"],
 });
 await app.register(multipart, {
